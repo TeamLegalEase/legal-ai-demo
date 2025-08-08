@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legal AI Document Analysis Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        .input-section label {
+            display: block;
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        #documentText {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        #documentText:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .analyze-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .result-card {
+            background: #f8f9fa;
+            border-left: 5px solid #667eea;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+        }
+
+        .result-card h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+
+        .result-card p {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .download-section {
+            display: none;
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .download-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            margin: 0 10px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .download-btn:hover {
+            background: #219a52;
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Legal AI Document Analysis</h1>
+            <p>Powered by AWS AI Agents & Step Functions</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="input-section">
+                <label for="documentText">📄 Paste Your Legal Document:</label>
+                <textarea id="documentText" placeholder="Paste your contract, agreement, or legal document here for AI analysis..."></textarea>
+            </div>
+            
+            <button id="analyzeBtn" class="analyze-btn">🚀 Analyze Document with AI Agents</button>
+            
+            <div id="loading" class="loading">
+                <div class="loading-spinner"></div>
+                <p id="loadingText">Initializing AI agents...</p>
+            </div>
+            
+            <div id="results" class="results">
+                <h2>📊 AI Analysis Results</h2>
+                <div id="resultsContent"></div>
+            </div>
+            
+            <div id="downloadSection" class="download-section">
+                <h3>📥 Download Reports</h3>
+                <button class="download-btn" onclick="downloadReport('legal')">Legal Analysis Report</button>
+                <button class="download-btn" onclick="downloadReport('risk')">Risk Assessment Report</button>
+                <button class="download-btn" onclick="downloadReport('compliance')">Compliance Report</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simulate AWS Step Functions execution
+        async function processDocument(documentText) {
+            const loadingMessages = [
+                "🤖 Initializing AI agents...",
+                "📖 Legal Agent analyzing document structure...",
+                "⚖️ Risk Agent evaluating potential issues...",
+                "📋 Compliance Agent checking regulations...",
+                "🔍 Cross-referencing legal databases...",
+                "📊 Generating comprehensive analysis..."
+            ];
+
+            for (let i = 0; i < loadingMessages.length; i++) {
+                document.getElementById('loadingText').textContent = loadingMessages[i];
+                await new Promise(resolve => setTimeout(resolve, 1500));
+            }
+
+            // Simulate AI analysis results
+            return {
+                legalAnalysis: {
+                    documentType: "Professional Services Agreement",
+                    keyTerms: ["12-month term", "automatic renewal", "30-day termination notice", "Net 30 payment terms"],
+                    recommendations: "Consider adding intellectual property clauses and liability limitations.",
+                    riskLevel: "Medium"
+                },
+                riskAssessment: {
+                    overallRisk: "Medium Risk",
+                    riskFactors: [
+                        "Automatic renewal clause may create unexpected obligations",
+                        "No liability cap specified",
+                        "Termination clause is standard but could be more specific"
+                    ],
+                    mitigationSuggestions: [
+                        "Add maximum liability clause",
+                        "Specify termination procedures in detail",
+                        "Include dispute resolution mechanism"
+                    ]
+                },
+                complianceCheck: {
+                    status: "Compliant",
+                    regulations: ["General Contract Law", "Commercial Code"],
+                    issues: "No major compliance issues detected",
+                    recommendations: "Document meets standard legal requirements for professional services agreements"
+                }
+            };
+        }
+
+        function displayResults(analysis) {
+            const resultsContent = document.getElementById('resultsContent');
+            
+            resultsContent.innerHTML = `
+                <div class="result-card">
+                    <h3>⚖️ Legal Analysis</h3>
+                    <p><strong>Document Type:</strong> ${analysis.legalAnalysis.documentType}</p>
+                    <p><strong>Key Terms:</strong> ${analysis.legalAnalysis.keyTerms.join(', ')}</p>
+                    <p><strong>Risk Level:</strong> ${analysis.legalAnalysis.riskLevel}</p>
+                    <p><strong>Recommendations:</strong> ${analysis.legalAnalysis.recommendations}</p>
+                </div>
+                
+                <div class="result-card">
+                    <h3>🛡️ Risk Assessment</h3>
+                    <p><strong>Overall Risk:</strong> ${analysis.riskAssessment.overallRisk}</p>
+                    <p><strong>Risk Factors:</strong></p>
+                    <ul>
+                        ${analysis.riskAssessment.riskFactors.map(factor => `<li>${factor}</li>`).join('')}
+                    </ul>
+                    <p><strong>Mitigation Suggestions:</strong></p>
+                    <ul>
+                        ${analysis.riskAssessment.mitigationSuggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+                    </ul>
+                </div>
+                
+                <div class="result-card">
+                    <h3>📋 Compliance Check</h3>
+                    <p><strong>Status:</strong> ${analysis.complianceCheck.status}</p>
+                    <p><strong>Applicable Regulations:</strong> ${analysis.complianceCheck.regulations.join(', ')}</p>
+                    <p><strong>Issues:</strong> ${analysis.complianceCheck.issues}</p>
+                    <p><strong>Recommendations:</strong> ${analysis.complianceCheck.recommendations}</p>
+                </div>
+            `;
+        }
+
+        function downloadReport(type) {
+            const reportTypes = {
+                'legal': 'Legal Analysis Report',
+                'risk': 'Risk Assessment Report', 
+                'compliance': 'Compliance Report'
+            };
+            
+            alert(`📥 Downloading ${reportTypes[type]}...\n\n(This is a demo - no actual file will be downloaded)`);
+        }
+
+        // Main analysis function
+        document.getElementById('analyzeBtn').addEventListener('click', async function() {
+            const documentText = document.getElementById('documentText').value.trim();
+            
+            if (!documentText) {
+                alert('⚠️ Please paste a document to analyze!');
+                return;
+            }
+
+            // Show loading, hide results
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('downloadSection').style.display = 'none';
+            document.getElementById('analyzeBtn').disabled = true;
+
+            try {
+                // Process document
+                const analysis = await processDocument(documentText);
+                
+                // Hide loading, show results
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('results').style.display = 'block';
+                document.getElementById('downloadSection').style.display = 'block';
+                
+                // Display results
+                displayResults(analysis);
+                
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                alert('❌ Error analyzing document: ' + error.message);
+            } finally {
+                document.getElementById('analyzeBtn').disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
+
+
